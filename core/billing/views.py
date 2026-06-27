@@ -1,4 +1,5 @@
 import csv
+import os
 from datetime import datetime, timedelta
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -7,10 +8,26 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.db.models import Sum
 from django.db.models.functions import TruncMonth
 from django.http import HttpResponse, Http404
-from .models import Customer, Invoice, Payment
+from .models import Customer, Invoice, Payment, User
+
+
+def ensure_default_admin_user():
+    if User.objects.exists():
+        return
+
+    username = os.getenv('DJANGO_SUPERUSER_USERNAME', 'admin')
+    email = os.getenv('DJANGO_SUPERUSER_EMAIL', 'admin@wistora.local')
+    password = os.getenv('DJANGO_SUPERUSER_PASSWORD', 'admin123')
+
+    user = User.objects.create_user(username=username, email=email, password=password, role='admin')
+    user.is_staff = True
+    user.is_superuser = True
+    user.save()
 
 
 def login_view(request):
+    ensure_default_admin_user()
+
     if request.method == 'POST':
         username = request.POST.get('username') or request.POST.get('email') or ''
         password = request.POST.get('password', '')
