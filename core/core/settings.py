@@ -91,17 +91,25 @@ DATABASE_URL = os.getenv('DATABASE_URL')
 
 if DATABASE_URL:
     parsed = urlparse(DATABASE_URL)
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.mysql',
-            'NAME': parsed.path.lstrip('/'),
-            'USER': parsed.username,
-            'PASSWORD': parsed.password,
-            'HOST': parsed.hostname or '127.0.0.1',
-            'PORT': str(parsed.port or 3306),
+    if parsed.scheme == 'sqlite':
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': os.path.join(BASE_DIR, parsed.path.lstrip('/')),
+            }
         }
-    }
-else:
+    else:
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.mysql',
+                'NAME': parsed.path.lstrip('/'),
+                'USER': parsed.username,
+                'PASSWORD': parsed.password,
+                'HOST': parsed.hostname or '127.0.0.1',
+                'PORT': str(parsed.port or 3306),
+            }
+        }
+elif os.getenv('DB_NAME') or os.getenv('DB_USER') or os.getenv('DB_PASSWORD') or os.getenv('DB_HOST') or os.getenv('DB_PORT'):
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',
@@ -110,6 +118,13 @@ else:
             'PASSWORD': os.getenv('DB_PASSWORD', '54665466a'),
             'HOST': os.getenv('DB_HOST', '127.0.0.1'),
             'PORT': os.getenv('DB_PORT', '3306'),
+        }
+    }
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
 
