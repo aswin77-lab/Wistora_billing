@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="space-y-8">
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-black text-gray-900 tracking-tight">Invoices</h1>
+            <p class="text-sm text-gray-400 font-medium mt-1">Audit framework records, generate automated calculations, and distribute billing.</p>
+        </div>
+        <button onclick="toggleModal('invoiceModal')" class="bg-[#030311] text-white font-bold text-sm px-5 py-3 rounded-xl transition hover:bg-black shadow-sm">
+            + Draft Invoice
+        </button>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="border-b border-gray-100 bg-gray-50 text-[11px] font-bold uppercase tracking-wider text-gray-400">
+                        <th class="py-4 px-6">Invoice ID</th>
+                        <th class="py-4 px-6">Target Entity</th>
+                        <th class="py-4 px-6">Generation Date</th>
+                        <th class="py-4 px-6">Financial Total</th>
+                        <th class="py-4 px-6">Ledger Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50 text-sm font-medium text-gray-700">
+                    {% for invoice in invoices %}
+                    <tr class="hover:bg-gray-50/70 transition">
+                        <td class="py-4 px-6 font-bold text-black tracking-tight">{{ invoice.invoice_number }}</td>
+                        <td class="py-4 px-6 font-semibold text-gray-900">{{ invoice.customer.full_name }}</td>
+                        <td class="py-4 px-6 text-gray-400 text-xs font-semibold">{{ invoice.issue_date|date:"d M Y" }}</td>
+                        <td class="py-4 px-6 font-bold text-gray-900">₹{{ invoice.grand_total }}</td>
+                        <td class="py-4 px-6">
+                            <span class="px-2.5 py-1 text-[10px] font-extrabold rounded-lg 
+                                {% if invoice.status == 'PAID' %}bg-green-50 text-green-600
+                                {% elif invoice.status == 'PARTIAL' %}bg-blue-50 text-blue-600
+                                {% else %}bg-amber-50 text-amber-600{% endif %}">
+                                {{ invoice.get_status_display }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="py-12 text-center text-gray-400 font-medium">No ledger records generated yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="invoiceModal" class="fixed inset-0 bg-black/50 z-50 flex justify-end hidden">
+        <div class="bg-white w-[450px] h-full p-8 shadow-2xl flex flex-col justify-between overflow-y-auto">
+            <div>
+                <div class="flex justify-between items-center mb-8">
+                    <h2 class="text-xl font-black text-gray-900">Draft New Invoice</h2>
+                    <button onclick="toggleModal('invoiceModal')" class="text-gray-400 hover:text-black font-bold text-xl">✕</button>
+                </div>
+
+                <form method="POST" action="{% url 'invoices' %}" class="space-y-5" id="invoiceForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="create_invoice">
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-2">Select Customer</label>
+                        <select name="customer_id" id="inv_customer" onchange="updateBaseFee()" class="w-full p-3.5 border border-gray-100 rounded-xl bg-gray-50 text-sm font-medium">
+                            <option value="">-- Choose Payer Node --</option>
+                            {% for customer in customers %}
+                            <option value="{{ customer.id }}" data-fee="{{ customer.fees }}">{{ customer.full_name }} (₹{{ customer.fees }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-2">Base Cost (₹)</label>
+                        <input type="number" id="inv_base" step="0.01" readonly class="w-full p-3.5 border border-gray-100 rounded-xl bg-gray-100 text-sm font-medium text-gray-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-2">Discount Cut (₹)</label>
+                        <input type="number" name="discount_applied" id="inv_discount" value="0.00" oninput="calculateInvoiceTotals()" class="w-full p-3.5 border border-gray-100 rounded-xl bg-gray-50 text-sm font-medium">
+                    </div>
+
+                    <div class="p-4 bg-gray-50 rounded-xl space-y-2 border border-gray-100">
+                        <div class="flex justify-between text-xs font-bold text-gray-400 uppercase">
+                            <span>Grand Total Billable</span>
+                            <span class="text-gray-900 text-base" id="grandTotalDisplay">₹0.00</span>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full py-4 bg-[#030311] hover:bg-black text-white rounded-xl font-bold text-sm tracking-wide transition shadow-lg">
+                        Publish Invoicing Record
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleModal(id) {
+        document.getElementById(id).classList.toggle('hidden');
+    }
+
+    function updateBaseFee() {
+        const select = document.getElementById('inv_customer');
+        const selectedOption = select.options[select.selectedIndex];
+        const baseFee = selectedOption.getAttribute('data-fee') || 0;
+        document.getElementById('inv_base').value = parseFloat(baseFee).toFixed(2);
+        calculateInvoiceTotals();
+    }
+
+    if (typeof calculationsAttached === 'undefined') {
+        window.calculateInvoiceTotals = function() {
+            const base = parseFloat(document.getElementById('inv_base').value) || 0;
+            const discount = parseFloat(document.getElementById('inv_discount').value) || 0;
+            
+            const grandTotal = Math.max(0, base - discount);
+            
+            document.getElementById('grandTotalDisplay').textContent = '₹' + grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+        window.calculationsAttached = true;
+    }
+</script>
+{% endblock %}

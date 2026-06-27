@@ -1,0 +1,138 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Payment Receipt - {{ payment.receipt_id }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body class="bg-gray-50 p-4 md:p-12 text-gray-900 antialiased text-sm">
+    
+    <div class="max-w-2xl mx-auto mb-4 flex justify-between items-center bg-white p-4 rounded-xl border border-gray-100 shadow-sm no-pdf">
+        <span class="text-xs font-semibold text-gray-500">Document Generated Successfully</span>
+        <button onclick="downloadAsPDF()" class="bg-[#030311] hover:bg-black text-white text-xs font-bold px-4 py-2 rounded-lg transition shadow-sm flex items-center gap-2">
+            💾 Download PDF Receipt
+        </button>
+    </div>
+
+    <div id="receipt-card" class="max-w-2xl mx-auto bg-white border border-gray-100 p-8 rounded-2xl shadow-sm space-y-8">
+        <div class="flex justify-between items-center border-b pb-6 border-gray-100">
+            <div class="flex items-center gap-3">
+                <img id="voucher-logo" 
+                     src="{% static 'images/LOGO_FINAL-02-removebg-preview.png' %}" 
+                     alt="Wistora Logo"
+                     class="h-10 w-auto object-contain invisible" />
+                <div>
+                    <h1 class="text-lg font-black tracking-tight text-gray-900 uppercase">Wistora Billing</h1>
+                    <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Transaction Receipt Voucher</p>
+                </div>
+            </div>
+            <div class="text-right">
+                <span class="bg-green-50 text-green-700 text-xs font-black px-3 py-1 rounded-full uppercase tracking-wider">
+                    Paid / Settled
+                </span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-6 text-xs bg-gray-50/50 p-4 rounded-xl border border-gray-100/50">
+            <div class="space-y-1">
+                <p class="text-gray-400 font-bold uppercase tracking-wide text-[10px]">Customer Details</p>
+                <p class="font-black text-gray-900 text-sm">{{ payment.invoice.customer.full_name }}</p>
+                <p class="text-gray-500 font-medium">{{ payment.invoice.customer.email }}</p>
+                <p class="text-gray-500 font-medium">{{ payment.invoice.customer.phone_number }}</p>
+            </div>
+            <div class="space-y-1 text-right">
+                <p class="text-gray-400 font-bold uppercase tracking-wide text-[10px]">Reference Logs</p>
+                <p class="text-900 font-semibold">Receipt: <span class="font-mono font-bold text-gray-900">{{ payment.receipt_id }}</span></p>
+                <p class="text-gray-500 font-semibold">Invoice Ref: <span class="font-mono">{{ payment.invoice.invoice_number }}</span></p>
+                <p class="text-gray-400 font-bold text-[10px]">{{ payment.payment_date|date:"d M Y" }}</p>
+            </div>
+        </div>
+
+        <div class="space-y-2">
+            <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Transaction Breakdown</p>
+            <div class="border border-gray-100 rounded-xl overflow-hidden">
+                <table class="w-full text-left text-xs font-medium">
+                    <tr class="bg-gray-50 text-gray-400 font-bold border-b border-gray-100">
+                        <th class="p-3">Description Allocation Mapping</th>
+                        <th class="p-3">Channel</th>
+                        <th class="p-3 text-right">Amount</th>
+                    </tr>
+                    <tr class="border-b border-gray-100 text-gray-700">
+                        <td class="p-3">
+                            <p class="font-bold text-gray-900">Payment Contribution Settlement</p>
+                            <p class="text-[10px] text-gray-400 font-medium">Applied directly to open invoice obligation profile.</p>
+                        </td>
+                        <td class="p-3 font-mono font-bold text-[11px] uppercase text-gray-500">{{ payment.method }}</td>
+                        <td class="p-3 text-right font-black text-gray-900">₹{{ payment.amount }}</td>
+                    </tr>
+                    <tr class="text-gray-500 bg-gray-50/20">
+                        <td colspan="2" class="p-3 text-right font-bold text-gray-400">Total Bill Cost Matrix:</td>
+                        <td class="p-3 text-right font-bold text-gray-900">₹{{ grand_total }}</td>
+                    </tr>
+                    <tr class="text-gray-500 bg-gray-50/20">
+                        <td colspan="2" class="p-3 text-right font-bold text-green-600">This Transaction Volume:</td>
+                        <td class="p-3 text-right font-black text-green-600">₹{{ payment.amount }}</td>
+                    </tr>
+                    <tr class="border-t border-gray-100 bg-gray-50/50">
+                        <td colspan="2" class="p-3 text-right font-black text-gray-400 uppercase tracking-wider text-[10px]">Remaining Outstanding Due Vector:</td>
+                        <td class="p-3 text-right font-black text-red-600 text-sm">₹{{ pending_amount }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="text-center pt-4 border-t border-gray-100">
+            <p class="text-[10px] text-gray-400 font-semibold tracking-wide">Thank you for your transaction with Wistora.</p>
+            <p class="text-[9px] text-gray-300 font-medium mt-0.5">This document is system-generated and verified directly inside automated architecture nodes.</p>
+        </div>
+    </div>
+
+    <script>
+        function downloadAsPDF() {
+            const element = document.getElementById('receipt-card');
+            const receiptId = "{{ payment.receipt_id }}";
+            
+            const options = {
+                margin:       0.5,
+                filename:     `Receipt_${receiptId}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { 
+                    scale: 2, 
+                    useCORS: false, 
+                    allowTaint: true,
+                    logging: false
+                },
+                jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+
+            html2pdf().set(options).from(element).save();
+        }
+
+        // Inline conversion block to force load local static content safely into layout cache
+        window.addEventListener('load', function() {
+            const img = document.getElementById('voucher-logo');
+            
+            // Generate canvas configuration locally to bypass all host file constraints
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            const tempImg = new Image();
+            tempImg.src = img.src;
+            tempImg.onload = function() {
+                canvas.width = tempImg.naturalWidth;
+                canvas.height = tempImg.naturalHeight;
+                ctx.drawImage(tempImg, 0, 0);
+                
+                // Overwrite src structure directly with raw Base64 data representation
+                img.src = canvas.toDataURL('image/png');
+                img.classList.remove('invisible');
+                
+                // Small execution buffer to complete PDF generation layout stream smoothly
+                setTimeout(downloadAsPDF, 500);
+            };
+        });
+    </script>
+</body>
+</html>

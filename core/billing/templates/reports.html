@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="space-y-8">
+    <div class="flex justify-between items-center flex-wrap gap-4">
+        <div class="flex items-center gap-3">
+            <div class="flex-shrink-0">
+                <img id="voucher-logo" 
+                     src="{% static 'images/logo.png' %}" 
+                     alt="Wistora Logo"
+                     class="h-10 w-auto object-contain invisible absolute" />
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2 bg-white border border-gray-100 p-1.5 rounded-xl shadow-sm">
+            <label class="text-[11px] font-black uppercase text-gray-400 px-2">Timeline</label>
+            <select id="timeline-filter" onchange="applyTimelineFilter()" class="text-xs font-bold text-gray-700 bg-gray-50 border-0 rounded-lg p-2 focus:ring-1 focus:ring-black">
+                <option value="">Full Master Ledger</option>
+                {% for opt in month_options %}
+                <option value="{{ opt }}" {% if selected_month == opt %}selected{% endif %}>{{ opt }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-6">
+        <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+            <div>
+                <span class="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Net Collection Engine Metric</span>
+                <h3 class="text-3xl font-black text-gray-900">₹{{ net_collection }}</h3>
+                <p class="text-[11px] text-gray-400 font-medium mt-1">Aggregated verified payments in the database.</p>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between">
+            <div>
+                <span class="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Outstanding Receivables Matrix</span>
+                <h3 class="text-3xl font-black text-red-600">₹{{ outstanding_dues }}</h3>
+                <p class="text-[11px] text-gray-400 font-medium mt-1">Awaiting tracking settlement across active nodes.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider">Audit Trace Trail Preview</h3>
+            <div class="flex items-center gap-2">
+                <a href="?action=export_csv{% if selected_month %}&month={{ selected_month }}{% endif %}" class="inline-block px-4 py-2 bg-gray-50 text-gray-700 rounded-xl font-bold text-xs hover:bg-gray-100 transition shadow-sm">
+                    Export CSV
+                </a>
+                <a href="?action=print_pdf{% if selected_month %}&month={{ selected_month }}{% endif %}" target="_blank" class="inline-block px-4 py-2 bg-gray-50 text-gray-700 rounded-xl font-bold text-xs hover:bg-gray-100 transition shadow-sm">
+                    Print Master PDF
+                </a>
+                <!-- <a href="?action=print_pdf&download=true{% if selected_month %}&month={{ selected_month }}{% endif %}" class="inline-block px-4 py-2 bg-[#030311] text-white rounded-xl font-bold text-xs hover:bg-black transition shadow-sm">
+                    Download Report PDF
+                </a> -->
+            </div>
+        </div>
+        
+        <div class="space-y-3">
+            {% for payment in payments %}
+            <div class="flex justify-between items-center p-4 bg-gray-50/50 rounded-xl border border-gray-100 hover:border-gray-200 transition">
+                <div class="flex items-center gap-4">
+                    <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                    <div>
+                        <p class="text-sm font-bold text-gray-900">Deposit Settlement (Receipt: {{ payment.receipt_id|default:payment.id }})</p>
+                        <p class="text-xs text-gray-400 font-medium">
+                            Allocated mapping against {{ payment.invoice.invoice_number }} • Authorized Client: {{ payment.invoice.customer.full_name }}
+                            {% if payment.invoice.customer.customer_type == 'student' and payment.invoice.customer.college_name %}
+                                 • <span class="text-blue-600 font-semibold">{{ payment.invoice.customer.college_name }}</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-6 text-right">
+                    <div>
+                        <p class="text-sm font-black text-gray-900">₹{{ payment.amount }}</p>
+                        <p class="text-[10px] text-gray-400 font-bold">{{ payment.payment_date|date:"d M Y" }}</p>
+                    </div>
+                    <a href="?action=print_receipt&payment_id={{ payment.id }}" target="_blank" class="text-xs bg-white border border-gray-200 hover:bg-gray-100 font-bold px-2.5 py-1.5 rounded-lg text-gray-700 transition">
+                        Receipt 
+                    </a>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-xs text-gray-400 text-center py-6">No tracking logs available inside current parameters.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+    function applyTimelineFilter() {
+        const selectedValue = document.getElementById('timeline-filter').value;
+        if (selectedValue) {
+            window.location.href = `?month=${selectedValue}`;
+        } else {
+            window.location.href = '?';
+        }
+    }
+
+    // Process image asset rendering without breaking the dashboard lifecycle stream
+    window.addEventListener('load', function() {
+        const img = document.getElementById('voucher-logo');
+        const fallbackIcon = document.getElementById('logo-fallback-icon');
+        
+        if (!img) return;
+
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const tempImg = new Image();
+        tempImg.src = img.src;
+        
+        // Success Handler: If Django successfully tracks down and serves the logo file asset
+        tempImg.onload = function() {
+            canvas.width = tempImg.naturalWidth;
+            canvas.height = tempImg.naturalHeight;
+            ctx.drawImage(tempImg, 0, 0);
+            
+            // Swap out structural source with clean Base64 presentation data inline
+            img.src = canvas.toDataURL('image/png');
+            img.classList.remove('invisible', 'absolute');
+            
+            // Conceal the generic text alternative icon container block safely
+            if (fallbackIcon) {
+                fallbackIcon.classList.add('hidden');
+            }
+        };
+
+        // Fallback Error Handler: Triggered instantly if your environment responds with a 404
+        tempImg.onerror = function() {
+            console.warn("Dashboard logo source asset triggered a 404 tracking fault code. Retaining CSS fallback icon layout visual.");
+            // Maintain layout stability by verifying fallback container presence
+            if (fallbackIcon) {
+                fallbackIcon.classList.remove('hidden');
+            }
+            img.remove(); // Safely remove the broken image element tree node entirely
+        };
+    });
+</script>
+{% endblock %}

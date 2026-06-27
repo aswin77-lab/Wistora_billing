@@ -1,0 +1,198 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login - Wistora IQ Solutions</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        * { font-family: 'Inter', sans-serif; }
+
+        .wi-cyan { color: #00AECB; }
+        .wi-navy { color: #1E2460; }
+
+        .input-field {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1.5px solid #E5E7EB;
+            border-radius: 12px;
+            background: #F9FAFB;
+            font-size: 14px;
+            font-weight: 500;
+            color: #111827;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
+        }
+        .input-field:focus {
+            border-color: #00AECB;
+            box-shadow: 0 0 0 3px rgba(0, 174, 203, 0.12);
+            background: #fff;
+        }
+        .input-field::placeholder { color: #9CA3AF; font-weight: 400; }
+
+        .btn-login {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #00AECB 0%, #1E2460 100%);
+            color: #fff;
+            font-weight: 700;
+            font-size: 14px;
+            letter-spacing: 0.05em;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+        .btn-login:hover { opacity: 0.92; transform: translateY(-1px); }
+        .btn-login:active { transform: translateY(0); }
+
+        .left-panel {
+            background: linear-gradient(160deg, #1E2460 0%, #0d1333 60%, #0a0f28 100%);
+        }
+
+        .accent-line {
+            width: 48px;
+            height: 4px;
+            background: linear-gradient(90deg, #00AECB, #1E2460);
+            border-radius: 99px;
+            margin-bottom: 24px;
+        }
+
+        .cred-box {
+            background: #F9FAFB;
+            border: 1px solid #F0F0F0;
+            border-radius: 16px;
+            padding: 18px 20px;
+        }
+
+        .cred-badge {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            padding: 3px 10px;
+            border-radius: 99px;
+        }
+        .badge-admin { background: rgba(0,174,203,0.12); color: #0090a8; }
+        .badge-acct  { background: rgba(30,36,96,0.1);    color: #1E2460; }
+
+        .feature-chip {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            margin-bottom: 10px;
+        }
+        .chip-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background: #00AECB;
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+<body style="margin:0; height:100vh; display:flex; overflow:hidden;">
+
+    <div class="left-panel" style="width:50%; display:flex; flex-direction:column; justify-content:space-between; padding:48px 56px; position:relative; overflow:hidden;">
+
+        <div style="position:absolute; right:-80px; top:-80px; width:320px; height:320px; border-radius:50%; background:rgba(0,174,203,0.07); pointer-events:none;"></div>
+        <div style="position:absolute; left:-60px; bottom:-60px; width:260px; height:260px; border-radius:50%; background:rgba(0,174,203,0.05); pointer-events:none;"></div>
+
+        <div style="position:relative; z-index:1; margin-top: auto; margin-bottom: auto;">
+            <div class="accent-line"></div>
+            <h1 style="color:#fff; font-size:42px; font-weight:900; line-height:1.15; letter-spacing:-0.02em; margin:0 0 18px; max-width:400px;">
+                Billing &amp; Invoice<br/>
+                <span style="color:#00AECB;">Management</span><br/>
+                System
+            </h1>
+            
+
+            
+        </div>
+
+        <p style="color:rgba(255,255,255,0.25); font-size:11px; font-weight:500; position:relative; z-index:1;">
+            © 2026 Wistora IQ Solutions. All rights reserved.
+        </p>
+    </div>
+
+    <div style="width:50%; background:#fff; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:48px 80px; overflow-y:auto;">
+        <div style="width:100%; max-width:400px;">
+
+            <div style="margin-bottom:40px; height:48px; display:flex; align-items:center; justify-content:flex-end; position:relative;">
+                <img id="login-panel-logo"
+                     src="{% static 'images/LOGO_FINAL-02-removebg-preview.png' %}"
+                     alt="Wistora Logo"
+                     style="height:42px; width:auto; object-fit:contain; visibility:hidden; position:absolute; right:0;" />
+                <div id="login-fallback-icon" style="display:flex; align-items:center; gap:10px;">
+                    <svg width="44" height="32" viewBox="0 0 44 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M2 4 L8 26 L14 12 L20 26 L26 4" stroke="#00AECB" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                        <rect x="30" y="10" width="4.5" height="16" rx="2.25" fill="#00AECB"/>
+                        <circle cx="32.25" cy="5" r="2.75" fill="#1E2460"/>
+                    </svg>
+                    <span style="color:#111827; font-size:17px; font-weight:700; letter-spacing:-0.01em;">Wistora <span style="color:#00AECB;">IQ</span></span>
+                </div>
+            </div>
+
+            <div style="margin-bottom:36px;">
+                <div style="display:inline-flex; align-items:center; gap:8px; background:rgba(0,174,203,0.08); border:1px solid rgba(0,174,203,0.2); border-radius:99px; padding:5px 14px; margin-bottom:20px;">
+                    <div style="width:6px; height:6px; border-radius:50%; background:#00AECB;"></div>
+                    <span style="font-size:12px; font-weight:600; color:#0090a8; letter-spacing:0.04em;">SECURE LOGIN</span>
+                </div>
+                <h2 style="font-size:30px; font-weight:900; color:#111827; letter-spacing:-0.02em; margin:0 0 8px;">Welcome back</h2>
+                <p style="color:#9CA3AF; font-size:14px; font-weight:400; margin:0;">Sign in to your account to continue</p>
+            </div>
+
+            <form method="POST" style="margin-bottom:24px;">
+                {% csrf_token %}
+                <div style="margin-bottom:18px;">
+                    <label style="display:block; font-size:11px; font-weight:700; color:#374151; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:8px;">Email address</label>
+                    <input type="email" name="username" placeholder="admin@gmail.com" class="input-field" />
+                </div>
+                <div style="margin-bottom:24px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <label style="font-size:11px; font-weight:700; color:#374151; text-transform:uppercase; letter-spacing:0.08em;">Password</label>
+                        <a href="#" style="font-size:12px; color:#00AECB; font-weight:500; text-decoration:none;">Forgot password?</a>
+                    </div>
+                    <input type="password" name="password" placeholder="••••••••" class="input-field" />
+                </div>
+                <button type="submit" class="btn-login">Sign in →</button>
+            </form>
+
+            <div style="display:flex; align-items:center; gap:12px; margin-bottom:20px;">
+                <div style="flex:1; height:1px; background:#F0F0F0;"></div>
+                <div style="flex:1; height:1px; background:#F0F0F0;"></div>
+            </div>
+
+            
+
+        </div>
+    </div>
+
+    <script>
+        window.addEventListener('load', function () {
+            const img = document.getElementById('login-panel-logo');
+            const fallback = document.getElementById('login-fallback-icon');
+            if (!img) return;
+
+            const tempImg = new Image();
+            tempImg.src = img.src;
+
+            tempImg.onload = function () {
+                img.style.visibility = 'visible';
+                img.style.position = 'static';
+                if (fallback) fallback.style.display = 'none';
+            };
+
+            tempImg.onerror = function () {
+                if (fallback) fallback.style.display = 'flex';
+                img.remove();
+            };
+        });
+    </script>
+</body>
+</html>

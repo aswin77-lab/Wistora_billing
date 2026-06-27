@@ -1,0 +1,221 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="space-y-8" x-data="{ 
+    openModal: false, 
+    openEditModal: false,
+    search: '',
+    editData: {
+        id: '',
+        type: 'student',
+        name: '',
+        email: '',
+        phone: '',
+        course: '',
+        fees: '',
+        college: '',
+        address: ''
+    }
+}">
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-black text-gray-900 tracking-tight">Customers</h1>
+            <p class="text-sm text-gray-400 font-medium mt-1">Manage and audit student registries and client entities.</p>
+        </div>
+        <button @click="openModal = true" class="bg-[#030311] text-white font-bold text-sm px-5 py-3 rounded-xl transition hover:bg-black shadow-sm">
+            + Add New Customer
+        </button>
+    </div>
+
+    <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-3">
+        <span class="text-gray-400"></span>
+        <input type="text" placeholder="Search customers by name, email or project..." 
+               class="w-full bg-transparent text-sm font-medium focus:outline-none"
+               id="customerSearch">
+    </div>
+
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse" id="customerTable">
+                <thead>
+                    <tr class="border-b border-gray-100 bg-gray-50 text-[11px] font-bold uppercase tracking-wider text-gray-400">
+                        <th class="py-4 px-6">Name / Enterprise</th>
+                        <th class="py-4 px-6">Type</th>
+                        <th class="py-4 px-6">Contact Channels</th>
+                        <th class="py-4 px-6">Program / Assignment</th>
+                        <th class="py-4 px-6">Contract Fee</th>
+                        <th class="py-4 px-6 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50 text-sm font-medium text-gray-700">
+                    {% for customer in customers %}
+                    <tr class="hover:bg-gray-50/70 transition customer-row">
+                        <td class="py-4 px-6 font-bold text-gray-900 search-target">{{ customer.full_name }}</td>
+                        <td class="py-4 px-6">
+                            <span class="px-2.5 py-1 text-[11px] font-bold rounded-lg {% if customer.customer_type == 'student' %}bg-blue-50 text-blue-600{% else %}bg-purple-50 text-purple-600{% endif %}">
+                                {{ customer.get_customer_type_display }}
+                            </span>
+                        </td>
+                        <td class="py-4 px-6 text-xs space-y-0.5">
+                            <p class="text-gray-900 font-semibold search-target">{{ customer.phone_number }}</p>
+                            <p class="text-gray-400 search-target">{{ customer.email }}</p>
+                        </td>
+                        <td class="py-4 px-6 text-gray-500 font-semibold search-target">{{ customer.course_or_service }}</td>
+                        <td class="py-4 px-6 font-bold text-gray-900">₹{{ customer.fees }}</td>
+                        <td class="py-4 px-6 text-right">
+                            <button 
+                                @click="
+                                    openEditModal = true;
+                                    editData.id = '{{ customer.id }}';
+                                    editData.type = '{{ customer.customer_type }}';
+                                    editData.name = '{{ customer.full_name|escapejs }}';
+                                    editData.email = '{{ customer.email|escapejs }}';
+                                    editData.phone = '{{ customer.phone_number|escapejs }}';
+                                    editData.course = '{{ customer.course_or_service|escapejs }}';
+                                    editData.fees = '{{ customer.fees }}';
+                                    editData.college = '{{ customer.college_name|default:''|escapejs }}';
+                                    editData.address = '{{ customer.address|default:''|escapejs }}';
+                                " 
+                                class="text-xs bg-gray-50 border border-gray-100 hover:bg-gray-100 text-gray-700 font-bold px-3 py-1.5 rounded-lg transition"
+                            >
+                                Edit Details
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="py-12 text-center text-gray-400 font-medium">No system registry instances discovered.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="fixed inset-0 bg-black/50 z-50 flex justify-end" x-show="openModal" x-transition.opacity style="display: none;">
+        <div class="bg-white w-[450px] h-full p-8 shadow-2xl flex flex-col justify-between overflow-y-auto" @click.away="openModal = false">
+            <div>
+                <div class="flex justify-between items-center mb-8">
+                    <h2 class="text-xl font-black text-gray-900">Add New Customer</h2>
+                    <button @click="openModal = false" class="text-gray-400 hover:text-black font-bold text-xl">✕</button>
+                </div>
+
+                <form method="POST" action="{% url 'customers' %}" class="space-y-5" x-data="{ addType: 'student' }">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="create_customer">
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-2">Customer Classification</label>
+                        <select name="customer_type" x-model="addType" class="w-full p-3.5 border border-gray-100 rounded-xl bg-gray-50 text-sm font-medium">
+                            <option value="student">Student</option>
+                            <option value="client">Corporate Client</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-2">Full Name / Company Name</label>
+                        <input type="text" name="full_name" required class="w-full p-3.5 border border-gray-100 rounded-xl bg-gray-50 text-sm font-medium">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-2">Email Address</label>
+                        <input type="email" name="email" required class="w-full p-3.5 border border-gray-100 rounded-xl bg-gray-50 text-sm font-medium">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-2">Phone Number</label>
+                        <input type="text" name="phone_number" required class="w-full p-3.5 border border-gray-100 rounded-xl bg-gray-50 text-sm font-medium">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-2">Course / Service Name</label>
+                        <input type="text" name="course_or_service" required class="w-full p-3.5 border border-gray-100 rounded-xl bg-gray-50 text-sm font-medium">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-2">Total Fee / Cost (₹)</label>
+                        <input type="number" step="0.01" name="fees" required class="w-full p-3.5 border border-gray-100 rounded-xl bg-gray-50 text-sm font-medium">
+                    </div>
+
+                    <div x-show="addType === 'student'" x-transition class="space-y-5">
+                        <div>
+                            <label class="block text-xs font-bold text-blue-600 uppercase mb-2">College Name</label>
+                            <input type="text" name="college_name" class="w-full p-3.5 border border-blue-100 rounded-xl bg-blue-50/30 text-sm font-medium" placeholder="e.g. Stanford Technical Institute">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-blue-600 uppercase mb-2">Physical Address</label>
+                            <textarea name="address" rows="3" class="w-full p-3.5 border border-blue-100 rounded-xl bg-blue-50/30 text-sm font-medium" placeholder="Street, Building, Flat details..."></textarea>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full mt-4 py-4 bg-[#030311] hover:bg-black text-white rounded-xl font-bold text-sm tracking-wide transition shadow-lg">
+                        Save Entity
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="fixed inset-0 bg-black/50 z-50 flex justify-end" x-show="openEditModal" x-transition.opacity style="display: none;">
+        <div class="bg-white w-[450px] h-full p-8 shadow-2xl flex flex-col justify-between overflow-y-auto" @click.away="openEditModal = false">
+            <div>
+                <div class="flex justify-between items-center mb-8">
+                    <h2 class="text-xl font-black text-gray-900">Modify Details</h2>
+                    <button @click="openEditModal = false" class="text-gray-400 hover:text-black font-bold text-xl">✕</button>
+                </div>
+
+                <form method="POST" action="{% url 'customers' %}" class="space-y-5">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="update_customer">
+                    <input type="hidden" name="customer_id" x-model="editData.id">
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Customer Classification</label>
+                        <input type="text" readonly class="w-full p-3.5 border border-gray-100 rounded-xl bg-gray-100 text-sm font-bold text-gray-500 capitalize cursor-not-allowed" x-model="editData.type">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-2">Full Name / Company Name</label>
+                        <input type="text" name="full_name" required class="w-full p-3.5 border border-gray-100 rounded-xl bg-gray-50 text-sm font-medium" x-model="editData.name">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-2">Email Address</label>
+                        <input type="email" name="email" required class="w-full p-3.5 border border-gray-100 rounded-xl bg-gray-50 text-sm font-medium" x-model="editData.email">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-2">Phone Number</label>
+                        <input type="text" name="phone_number" required class="w-full p-3.5 border border-gray-100 rounded-xl bg-gray-50 text-sm font-medium" x-model="editData.phone">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-2">Course / Service Name</label>
+                        <input type="text" name="course_or_service" required class="w-full p-3.5 border border-gray-100 rounded-xl bg-gray-50 text-sm font-medium" x-model="editData.course">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-2">Total Fee / Cost (₹)</label>
+                        <input type="number" step="0.01" name="fees" required class="w-full p-3.5 border border-gray-100 rounded-xl bg-gray-50 text-sm font-medium" x-model="editData.fees">
+                    </div>
+
+                    <div x-show="editData.type === 'student'" x-transition class="space-y-5">
+                        <div class="border-t border-gray-100 pt-4">
+                            <label class="block text-xs font-bold text-blue-600 uppercase mb-2">College Name</label>
+                            <input type="text" name="college_name" class="w-full p-3.5 border border-blue-100 rounded-xl bg-blue-50/30 text-sm font-medium" x-model="editData.college">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-blue-600 uppercase mb-2">Physical Address</label>
+                            <textarea name="address" rows="3" class="w-full p-3.5 border border-blue-100 rounded-xl bg-blue-50/30 text-sm font-medium" x-model="editData.address"></textarea>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full mt-4 py-4 bg-[#030311] hover:bg-black text-white rounded-xl font-bold text-sm tracking-wide transition shadow-lg">
+                        Update Customer Data
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Live table frontend text filter matching logic
+    document.getElementById('customerSearch').addEventListener('input', function(e) {
+        const text = e.target.value.toLowerCase();
+        document.querySelectorAll('.customer-row').forEach(row => {
+            const match = Array.from(row.querySelectorAll('.search-target')).some(el => el.textContent.toLowerCase().includes(text));
+            row.style.display = match ? '' : 'none';
+        });
+    });
+</script>
+{% endblock %}

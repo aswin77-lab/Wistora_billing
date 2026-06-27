@@ -1,0 +1,103 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Wistora Billing</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="bg-[#f8fafc] font-sans flex h-screen overflow-hidden">
+
+    <aside class="w-64 bg-white border-r border-gray-100 flex flex-col justify-between h-full">
+        <div>
+            <div class="p-6 flex items-center justify-start">
+                <img id="sidebar-logo" 
+                     src="{% static 'images/LOGO_FINAL-02-removebg-preview.png' %}" 
+                     alt="Wistora Logo"
+                     class="h-9 w-auto object-contain invisible absolute" />
+                     
+                <div id="sidebar-fallback-icon" class="h-9 w-9 rounded-xl bg-[#030311] flex items-center justify-center text-white font-black text-sm tracking-tighter">
+                    W
+                </div>
+            </div>
+
+            <nav class="px-4 space-y-1">
+                <a href="{% url 'dashboard' %}" class="flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl {% if request.resolver_match.url_name == 'dashboard' %}bg-gray-100 text-gray-900{% else %}text-gray-500 hover:bg-gray-50{% endif %}">
+                    Dashboard
+                </a>
+                
+                {% if request.user.role == 'admin' %}
+                <a href="{% url 'customers' %}" class="flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl {% if request.resolver_match.url_name == 'customers' %}bg-gray-100 text-gray-900{% else %}text-gray-500 hover:bg-gray-50{% endif %}">
+                    Customers
+                </a>
+                <a href="{% url 'invoices' %}" class="flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl {% if request.resolver_match.url_name == 'invoices' %}bg-gray-100 text-gray-900{% else %}text-gray-500 hover:bg-gray-50{% endif %}">
+                    Invoices
+                </a>
+                {% endif %}
+
+                <a href="{% url 'payments' %}" class="flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl {% if request.resolver_match.url_name == 'payments' %}bg-gray-100 text-gray-900{% else %}text-gray-500 hover:bg-gray-50{% endif %}">
+                    Payments
+                </a>
+                <a href="{% url 'reports' %}" class="flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl {% if request.resolver_match.url_name == 'reports' %}bg-gray-100 text-gray-900{% else %}text-gray-500 hover:bg-gray-50{% endif %}">
+                    Reports
+                </a>
+            </nav>
+        </div>
+
+        <div class="p-4 border-t border-gray-100">
+            <div class="flex items-center gap-3 px-4 py-2">
+                <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600">U</div>
+                <div>
+                    <p class="text-sm font-bold text-gray-900">{{ request.user.username|title }}</p>
+                    <p class="text-xs text-gray-400 font-medium">{{ request.user.get_role_display }}</p>
+                </div>
+            </div>
+            <a href="{% url 'logout' %}" class="block text-center mt-2 w-full py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 rounded-xl text-xs font-bold transition">
+                Logout
+            </a>
+        </div>
+    </aside>
+
+    <main class="flex-1 overflow-y-auto p-10">
+        {% block content %}{% endblock %}
+    </main>
+
+    <script>
+        window.addEventListener('load', function() {
+            const img = document.getElementById('sidebar-logo');
+            const fallbackIcon = document.getElementById('sidebar-fallback-icon');
+            
+            if (!img) return;
+
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const tempImg = new Image();
+            tempImg.src = img.src;
+            
+            // Success Pipeline: If found, convert to inline Base64 to secure layout data stability
+            tempImg.onload = function() {
+                canvas.width = tempImg.naturalWidth;
+                canvas.height = tempImg.naturalHeight;
+                ctx.drawImage(tempImg, 0, 0);
+                
+                img.src = canvas.toDataURL('image/png');
+                img.classList.remove('invisible', 'absolute');
+                
+                if (fallbackIcon) {
+                    fallbackIcon.classList.add('hidden');
+                }
+            };
+
+            // Error Fallback Pipeline: Keeps 'W' icon visible smoothly if server routes a 404
+            tempImg.onerror = function() {
+                console.warn("Sidebar header logo asset could not be found. Retaining placeholder box layout.");
+                if (fallbackIcon) {
+                    fallbackIcon.classList.remove('hidden');
+                }
+                img.remove();
+            };
+        });
+    </script>
+</body>
+</html>

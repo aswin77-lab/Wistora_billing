@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="space-y-8">
+    <div class="flex justify-between items-center flex-wrap gap-4">
+        <div>
+            <h1 class="text-3xl font-black text-gray-900 tracking-tight">Payments</h1>
+            <p class="text-sm text-gray-400 font-medium mt-1">Real-time terminal view of incoming payments.</p>
+        </div>
+        
+        <div class="flex items-center gap-3 flex-wrap sm:flex-nowrap w-full sm:w-auto">
+            <div class="relative w-full sm:w-72">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-gray-400">
+                    
+                </span>
+                <input type="text" 
+                       id="payment-search" 
+                       onkeyup="filterPaymentsTable()" 
+                       placeholder="Search by payer name, receipt..." 
+                       class="w-full pl-10 pr-4 py-3 border border-gray-100 rounded-xl bg-white text-xs font-bold text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-black focus:border-black shadow-sm transition-all" />
+            </div>
+
+            <button onclick="toggleModal('paymentModal')" class="bg-[#030311] text-white font-bold text-sm px-5 py-3 rounded-xl transition hover:bg-black shadow-sm flex-shrink-0 w-full sm:w-auto">
+                + Record Transaction
+            </button>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse" id="payments-data-table">
+                <thead>
+                    <tr class="border-b border-gray-100 bg-gray-50 text-[11px] font-bold uppercase tracking-wider text-gray-400">
+                        <th class="py-4 px-6">Receipt Code</th>
+                        <th class="py-4 px-6">Linked Invoice</th>
+                        <th class="py-4 px-6">Payer Node</th>
+                        <th class="py-4 px-6">Execution Channel</th>
+                        <th class="py-4 px-6">Processing Date</th>
+                        <th class="py-4 px-6">Amount Collected</th>
+                        <th class="py-4 px-6 text-right">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50 text-sm font-medium text-gray-700">
+                    {% for payment in payments %}
+                    <tr class="hover:bg-gray-50/70 transition payment-row">
+                        <td class="py-4 px-6 font-bold text-gray-900 receipt-id-cell">{{ payment.receipt_id }}</td>
+                        <td class="py-4 px-6 text-xs font-semibold text-gray-400 invoice-ref-cell">{{ payment.invoice.invoice_number }}</td>
+                        <td class="py-4 px-6 font-semibold text-gray-800 payer-name-cell">{{ payment.invoice.customer.full_name }}</td>
+                        <td class="py-4 px-6">
+                            <span class="bg-gray-100 text-gray-800 text-[11px] font-bold px-2 py-0.5 rounded">
+                                {{ payment.method }}
+                            </span>
+                        </td>
+                        <td class="py-4 px-6 text-xs text-gray-400 font-semibold">{{ payment.payment_date|date:"d M Y" }}</td>
+                        <td class="py-4 px-6 font-black text-green-600">+ ₹{{ payment.amount }}</td>
+                        <td class="py-4 px-6 text-right">
+                            <a href="{% url 'reports' %}?action=print_receipt&payment_id={{ payment.id }}" target="_blank" class="inline-flex items-center justify-center px-3 py-1.5 bg-gray-50 text-gray-700 rounded-lg hover:bg-[#030311] hover:text-white text-xs font-bold transition shadow-sm gap-1">
+                                📄 <span class="text-[11px]">Receipt</span>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr id="empty-state-row">
+                        <td colspan="7" class="py-12 text-center text-gray-400 font-medium">No verified deposits indexed.</td>
+                    </tr>
+                    {% endfor %}
+                    <tr id="no-search-results-row" class="hidden">
+                        <td colspan="7" class="py-12 text-center text-gray-400 font-medium">No matching ledger records discovered.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="paymentModal" class="fixed inset-0 bg-black/50 z-50 flex justify-end hidden">
+        <div class="bg-white w-[450px] h-full p-8 shadow-2xl flex flex-col justify-between overflow-y-auto">
+            <div>
+                <div class="flex justify-between items-center mb-8">
+                    <h2 class="text-xl font-black text-gray-900">Record Transaction</h2>
+                    <button onclick="toggleModal('paymentModal')" class="text-gray-400 hover:text-black font-bold text-xl">✕</button>
+                </div>
+
+                <form method="POST" action="{% url 'payments' %}" class="space-y-5">
+                    {% csrf_token %}
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-2">Link To Open Invoice</label>
+                        <select name="invoice_id" required class="w-full p-3.5 border border-gray-100 rounded-xl bg-gray-50 text-sm font-medium">
+                            <option value="">-- Select Target Bill Trace --</option>
+                            {% for invoice in open_invoices %}
+                            <option value="{{ invoice.id }}">{{ invoice.invoice_number }} - {{ invoice.customer.full_name }} (₹{{ invoice.grand_total }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-2">Amount Deposited (₹)</label>
+                        <input type="number" step="0.01" name="amount" required class="w-full p-3.5 border border-gray-100 rounded-xl bg-gray-50 text-sm font-medium">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-700 uppercase mb-2">Payment Method</label>
+                        <select name="method" class="w-full p-3.5 border border-gray-100 rounded-xl bg-gray-50 text-sm font-medium">
+                            <option value="UPI">UPI / QR Scan</option>
+                            <option value="Bank Transfer">Bank Transfer</option>
+                            <option value="Cash">Cash Hard Currency</option>
+                            <option value="Card">Debit/Credit Card</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="w-full py-4 bg-[#030311] hover:bg-black text-white rounded-xl font-bold text-sm tracking-wide transition shadow-lg">
+                        Commit Settlement Ledger
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleModal(id) {
+        document.getElementById(id).classList.toggle('hidden');
+    }
+
+    // High performance real-time text parsing filter array loop engine
+    function filterPaymentsTable() {
+        const filterValue = document.getElementById('payment-search').value.toLowerCase().trim();
+        const rows = document.getElementsByClassName('payment-row');
+        const defaultEmptyRow = document.getElementById('empty-state-row');
+        const searchNoResultsRow = document.getElementById('no-search-results-row');
+        let matchCount = 0;
+
+        // Skip calculations if the view is entirely empty natively
+        if (rows.length === 0 && defaultEmptyRow) return;
+
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            
+            // Extract layout values cleanly from designated semantic classes
+            const receiptId = row.querySelector('.receipt-id-cell').textContent.toLowerCase();
+            const invoiceRef = row.querySelector('.invoice-ref-cell').textContent.toLowerCase();
+            const payerName = row.querySelector('.payer-name-cell').textContent.toLowerCase();
+
+            // Match query across multiple data dimensions
+            if (receiptId.includes(filterValue) || invoiceRef.includes(filterValue) || payerName.includes(filterValue)) {
+                row.classList.remove('hidden');
+                matchCount++;
+            } else {
+                row.classList.add('hidden');
+            }
+        }
+
+        // Toggle visibility vectors based on search results match limits
+        if (searchNoResultsRow) {
+            if (matchCount === 0 && filterValue !== "") {
+                searchNoResultsRow.classList.remove('hidden');
+            } else {
+                searchNoResultsRow.classList.add('hidden');
+            }
+        }
+    }
+</script>
+{% endblock %}

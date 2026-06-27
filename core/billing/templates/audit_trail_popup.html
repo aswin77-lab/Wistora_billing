@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="space-y-6 max-w-2xl mx-auto">
+    <div class="flex justify-between items-center">
+        <div>
+            <a href="{% url 'reports' %}" class="text-xs font-bold text-gray-400 hover:text-black transition">← Back to Ledger Overview</a>
+            <h1 class="text-2xl font-black text-gray-900 mt-2">Audit Pipeline Log</h1>
+        </div>
+        <span class="px-3 py-1 bg-gray-100 rounded-lg text-xs font-mono font-bold">#INV-{{ invoice.id }}</span>
+    </div>
+
+    <div class="bg-white border rounded-2xl p-6 space-y-4">
+        <h3 class="text-xs font-black text-gray-400 uppercase tracking-wider">Target Account Context</h3>
+        <div class="grid grid-cols-2 gap-4 text-xs">
+            <div>
+                <p class="text-gray-400">Account Name Reference</p>
+                <p class="font-bold text-gray-900 mt-0.5">{{ invoice.customer.full_name }}</p>
+            </div>
+            <div>
+                <p class="text-gray-400">Total Invoice Valuation</p>
+                <p class="font-bold text-gray-900 mt-0.5">₹{{ invoice.grand_total }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white border rounded-2xl p-6 space-y-4">
+        <h3 class="text-xs font-black text-gray-400 uppercase tracking-wider">Chronological Pipeline Receipts Matrix</h3>
+        <div class="space-y-6 relative before:absolute before:bottom-2 before:top-2 before:left-3.5 before:w-0.5 before:bg-gray-100">
+            {% for log in history_logs %}
+            <div class="flex items-start gap-4 relative">
+                <div class="w-7 h-7 rounded-full bg-green-50 border border-green-200 text-green-600 flex items-center justify-center font-bold text-xs z-10">
+                    ✓
+                </div>
+                <div>
+                    <p class="text-xs font-bold text-gray-900">Collection Payment Entry Log Applied</p>
+                    <p class="text-[11px] text-gray-400 mt-0.5">Deposited entry of <span class="text-green-600 font-bold">₹{{ log.amount }}</span> processed successfully through gateway method node [{{ log.method }}].</p>
+                    <span class="text-[10px] text-gray-400 font-mono block mt-1">{{ log.payment_date|date:"d M Y - H:i" }}</span>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-xs text-gray-400 font-medium py-4 text-center">No structural verification deposits recorded against this document asset ledger instance.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
