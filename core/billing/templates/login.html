@@ -149,9 +149,14 @@
 
             <form method="POST" style="margin-bottom:24px;">
                 {% csrf_token %}
+                {% if form.non_field_errors %}
+                <div style="margin-bottom:16px; padding:12px 14px; border-radius:12px; background:#fef2f2; border:1px solid #fecaca; color:#b91c1c; font-size:13px;">
+                    {{ form.non_field_errors }}
+                </div>
+                {% endif %}
                 <div style="margin-bottom:18px;">
-                    <label style="display:block; font-size:11px; font-weight:700; color:#374151; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:8px;">Email address</label>
-                    <input type="email" name="username" placeholder="admin@gmail.com" class="input-field" />
+                    <label style="display:block; font-size:11px; font-weight:700; color:#374151; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:8px;">Username or Email</label>
+                    <input type="text" name="username" placeholder="admin" class="input-field" autocomplete="username" />
                 </div>
                 <div style="margin-bottom:24px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
