@@ -10,7 +10,7 @@ def create_default_superuser(sender, **kwargs):
         return
 
     username = os.getenv('DJANGO_SUPERUSER_USERNAME', 'admin')
-    email = os.getenv('DJANGO_SUPERUSER_EMAIL', 'admin@example.com')
+    email = os.getenv('DJANGO_SUPERUSER_EMAIL', 'admin@wistora.local')
     password = os.getenv('DJANGO_SUPERUSER_PASSWORD', 'admin123')
 
     user = User.objects.create(username=username, email=email, role='admin')
